@@ -109,107 +109,105 @@ namespace GetSiteCollectionInventory
                     webcontext.Load(web, w => w.Lists, w => w.Title);
                     webcontext.ExecuteQuery();
 
-                    if (strUrl != siteUrl + "/Surveys")
+
+                    foreach (List list in web.Lists)
                     {
-                        foreach (List list in web.Lists)
+                        webcontext.Load(list, l => l.ItemCount, l => l.Title, l => l.DefaultViewUrl, l => l.DefaultDisplayFormUrl, l => l.BaseTemplate);
+                        webcontext.ExecuteQuery();
+                        // 101 => Documents ----   850 => Pages  ----- 100 => Generic List
+                        Console.WriteLine("List info: {0} --- {1} --- {2} --- {3} ", list.Title, list.ItemCount, list.DefaultViewUrl, list.BaseTemplate);
+                        int pos = Array.IndexOf(listExceptions, list.Title);
+                        if (pos == -1 && list.ItemCount < 5000) //check if current list exists in exceptions list. If false, list will be inventoried
                         {
-                            webcontext.Load(list, l => l.ItemCount, l => l.Title, l => l.DefaultViewUrl, l => l.DefaultDisplayFormUrl, l => l.BaseTemplate);
+                            //Console.WriteLine(list.Title + " will be inventoried");
+                            ListItemCollection collItems = list.GetItems(qry);
+                            webcontext.Load(collItems);
                             webcontext.ExecuteQuery();
-                            // 101 => Documents ----   850 => Pages  ----- 100 => Generic List
-                            Console.WriteLine("List info: {0} --- {1} --- {2} --- {3} ", list.Title, list.ItemCount, list.DefaultViewUrl, list.BaseTemplate);
-                            int pos = Array.IndexOf(listExceptions, list.Title);
-                            if (pos == -1 && list.ItemCount < 5000) //check if current list exists in exceptions list. If false, list will be inventoried
+                            if (collItems.Count > 0)
                             {
-                                //Console.WriteLine(list.Title + " will be inventoried");
-                                ListItemCollection collItems = list.GetItems(qry);
-                                webcontext.Load(collItems);
-                                webcontext.ExecuteQuery();
-                                if (collItems.Count > 0)
+                                int intGenericList = Array.IndexOf(genericListIds, list.BaseTemplate);
+
+                                foreach (ListItem item in collItems)
                                 {
-                                    int intGenericList = Array.IndexOf(genericListIds, list.BaseTemplate);
-
-                                    foreach (ListItem item in collItems)
+                                    webcontext.Load(item);
+                                    webcontext.ExecuteQuery();
+                                    FieldUserValue authorValue = (FieldUserValue)item["Author"];
+                                    FieldUserValue editorValue = (FieldUserValue)item["Editor"];
+                                    string strAuthor = string.Empty;
+                                    string strEditor = string.Empty;
+                                    if (authorValue.LookupValue != null)
                                     {
-                                        webcontext.Load(item);
-                                        webcontext.ExecuteQuery();
-                                        FieldUserValue authorValue = (FieldUserValue)item["Author"];
-                                        FieldUserValue editorValue = (FieldUserValue)item["Editor"];
-                                        string strAuthor = string.Empty;
-                                        string strEditor = string.Empty;
-                                        if (authorValue.LookupValue != null)
-                                        {
-                                            strAuthor = (authorValue.LookupValue).Replace(",", " ") + ",";
-                                        }
-
-                                        if (editorValue.LookupValue != null)
-                                        {
-                                            strEditor = (editorValue.LookupValue).Replace(",", " ") + ",";
-                                        }
-
-                                        string strItemTitle = string.Empty;
-                                        if (item["Title"] != null)
-                                        {
-                                            strItemTitle = item["Title"].ToString().Replace(",", " ").Replace("\n", "");
-                                        }
-                                        string strItemUrl = string.Empty;
-                                        if (intGenericList != -1)
-                                        {
-                                            strItemUrl = list.DefaultDisplayFormUrl + "?ID=" + item.Id.ToString();
-                                        }
-                                        else
-                                        {
-                                            strItemUrl = item["FileRef"].ToString();
-                                        }
-                                        string strListType = string.Empty;
-                                        string strItemType = string.Empty;
-                                        if (item.FileSystemObjectType.ToString() == "Folder")
-                                        {
-                                            string[] arrListAndItemType = GetListAndItemType(list.BaseTemplate, strItemUrl, "Folder");
-                                            strListType = arrListAndItemType[0];
-                                            strItemType = arrListAndItemType[1];
-                                        }
-                                        else //it is a File
-                                        {
-                                            string[] arrListAndItemType = GetListAndItemType(list.BaseTemplate, strItemUrl, "File");
-                                            strListType = arrListAndItemType[0];
-                                            strItemType = arrListAndItemType[1];
-
-                                        }
-
-                                        Console.WriteLine("Item info: {0} -- {1} -- {2} -- {3} -- {4} -- {5} -- {6}  -- {7} -- {8} -- {9} -- {10} ---{11} --- {12} --- {13}",
-                                            web.Title, strUrl, list.Title, list.ItemCount.ToString(), list.DefaultViewUrl, strListType, item.Id.ToString(), strItemType, strItemTitle, item["Created"],
-                                            strAuthor, item["Modified"], strEditor, strItemUrl);
-
-                                        sbInvCSVFile.AppendLine(web.Title + "," +
-                                                                strUrl + "," +
-                                                                list.Title + "," +
-                                                                list.ItemCount.ToString() + "," +
-                                                                list.DefaultViewUrl + "," +
-                                                                strListType + "," +
-                                                                item.Id.ToString() + "," +
-                                                                strItemType + "," +
-                                                                strItemTitle + "," +
-                                                                item["Created"] + "," +
-                                                                strAuthor + "," +
-                                                                item["Modified"] + "," +
-                                                                strEditor + "," +
-                                                                strItemUrl
-                                                                );
+                                        strAuthor = (authorValue.LookupValue).Replace(",", " ") + ",";
                                     }
+
+                                    if (editorValue.LookupValue != null)
+                                    {
+                                        strEditor = (editorValue.LookupValue).Replace(",", " ") + ",";
+                                    }
+
+                                    string strItemTitle = string.Empty;
+                                    if (item["Title"] != null)
+                                    {
+                                        strItemTitle = item["Title"].ToString().Replace(",", " ").Replace("\n", "");
+                                    }
+                                    string strItemUrl = string.Empty;
+                                    if (intGenericList != -1)
+                                    {
+                                        strItemUrl = list.DefaultDisplayFormUrl + "?ID=" + item.Id.ToString();
+                                    }
+                                    else
+                                    {
+                                        strItemUrl = item["FileRef"].ToString();
+                                    }
+                                    string strListType = string.Empty;
+                                    string strItemType = string.Empty;
+                                    if (item.FileSystemObjectType.ToString() == "Folder")
+                                    {
+                                        string[] arrListAndItemType = GetListAndItemType(list.BaseTemplate, strItemUrl, "Folder");
+                                        strListType = arrListAndItemType[0];
+                                        strItemType = arrListAndItemType[1];
+                                    }
+                                    else //it is a File
+                                    {
+                                        string[] arrListAndItemType = GetListAndItemType(list.BaseTemplate, strItemUrl, "File");
+                                        strListType = arrListAndItemType[0];
+                                        strItemType = arrListAndItemType[1];
+
+                                    }
+
+                                    Console.WriteLine("Item info: {0} -- {1} -- {2} -- {3} -- {4} -- {5} -- {6}  -- {7} -- {8} -- {9} -- {10} ---{11} --- {12} --- {13}",
+                                        web.Title, strUrl, list.Title, list.ItemCount.ToString(), list.DefaultViewUrl, strListType, item.Id.ToString(), strItemType, strItemTitle, item["Created"],
+                                        strAuthor, item["Modified"], strEditor, strItemUrl);
+
+                                    sbInvCSVFile.AppendLine(web.Title + "," +
+                                                            strUrl + "," +
+                                                            list.Title + "," +
+                                                            list.ItemCount.ToString() + "," +
+                                                            list.DefaultViewUrl + "," +
+                                                            strListType + "," +
+                                                            item.Id.ToString() + "," +
+                                                            strItemType + "," +
+                                                            strItemTitle + "," +
+                                                            item["Created"] + "," +
+                                                            strAuthor + "," +
+                                                            item["Modified"] + "," +
+                                                            strEditor + "," +
+                                                            strItemUrl
+                                                            );
                                 }
                             }
-
-                            if (pos == -1 && list.ItemCount > 5000) // This is a LARGE LIST (i.e. contains more than 5000 items. Log it for now. Will need to inventory these lists separately)
-                            {
-                                sbLargeListsCSVFile.AppendLine(web.Title + "," +
-                                                               strUrl + "," +
-                                                               list.Title + "," +
-                                                               list.ItemCount.ToString() + "," +
-                                                               list.DefaultViewUrl
-                                                               );
-                            }
-
                         }
+
+                        if (pos == -1 && list.ItemCount > 5000) // This is a LARGE LIST (i.e. contains more than 5000 items. Log it for now. Will need to inventory these lists separately)
+                        {
+                            sbLargeListsCSVFile.AppendLine(web.Title + "," +
+                                                           strUrl + "," +
+                                                           list.Title + "," +
+                                                           list.ItemCount.ToString() + "," +
+                                                           list.DefaultViewUrl
+                                                           );
+                        }
+
                     }
 
                 }
@@ -282,12 +280,12 @@ namespace GetSiteCollectionInventory
 
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("An error has occurred. Here are the error details:\n\n Stack Trace: \n\n {0}\n\n Inner Exception: \n\n {1}\n Message:\n\n {2}", ex.StackTrace, ex.InnerException, ex.Message);
                 Console.ReadLine();
             }
-    }
+        }
 
         private static string[] GetListAndItemType(int baseTemplate, string strItemUrl, string strFolderOrFile)
         {
