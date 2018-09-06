@@ -221,12 +221,12 @@ namespace GetSiteCollectionInventory
                 teamcontext.Load(teamweb, w => w.Lists, w => w.Title);
                 teamcontext.ExecuteQuery();
 
-                // get TeamSiteDirectory list and loop through each item in the list
-                List listTeamSiteDir = teamweb.Lists.GetByTitle("TeamSiteDirectory");
-                teamcontext.Load(listTeamSiteDir, l => l.Title, l => l.DefaultViewUrl, l => l.ItemCount, l => l.DefaultDisplayFormUrl, l => l.BaseTemplate);
+                // get SomeLargeList list and loop through each item in the list
+                List listLarge = teamweb.Lists.GetByTitle("SomeLargeList");
+                teamcontext.Load(listLarge, l => l.Title, l => l.DefaultViewUrl, l => l.ItemCount, l => l.DefaultDisplayFormUrl, l => l.BaseTemplate);
                 teamcontext.ExecuteQuery();
 
-                ListItemCollection collTeamSiteItems = listTeamSiteDir.GetItems(largeListqry);
+                ListItemCollection collTeamSiteItems = listLarge.GetItems(largeListqry);
                 teamcontext.Load(collTeamSiteItems);
                 teamcontext.ExecuteQuery();
                 if (collTeamSiteItems.Count > 0)
@@ -245,13 +245,13 @@ namespace GetSiteCollectionInventory
                         }
 
                         Console.WriteLine("Item info: {0} -- {1} -- {2} -- {3} -- {4} -- {5} -- {6}  -- {7} -- {8} -- {9} -- {10} ---- {11}",
-                            teamweb.Title, siteUrl, listTeamSiteDir.Title, listTeamSiteDir.ItemCount.ToString(), listTeamSiteDir.DefaultViewUrl, item.Id.ToString(), strItemTitle, item["Created"],
-                            authorValue.LookupValue, item["Modified"], editorValue.LookupValue, listTeamSiteDir.DefaultDisplayFormUrl + "?ID=" + item.Id.ToString());
+                            teamweb.Title, siteUrl, listLarge.Title, listLarge.ItemCount.ToString(), listLarge.DefaultViewUrl, item.Id.ToString(), strItemTitle, item["Created"],
+                            authorValue.LookupValue, item["Modified"], editorValue.LookupValue, listLarge.DefaultDisplayFormUrl + "?ID=" + item.Id.ToString());
                         sbInvCSVFile.AppendLine(teamweb.Title + "," +
                                                 siteUrl + "," +
-                                                listTeamSiteDir.Title + "," +
-                                                listTeamSiteDir.ItemCount.ToString() + "," +
-                                                listTeamSiteDir.DefaultViewUrl + "," +
+                                                listLarge.Title + "," +
+                                                listLarge.ItemCount.ToString() + "," +
+                                                listLarge.DefaultViewUrl + "," +
                                                 "List" + "," +
                                                 item.Id.ToString() + "," +
                                                 "Item" + "," +
@@ -260,7 +260,7 @@ namespace GetSiteCollectionInventory
                                                 (authorValue.LookupValue).Replace(",", " ") + "," +
                                                 item["Modified"] + "," +
                                                 (editorValue.LookupValue).Replace(",", " ") + "," +
-                                                listTeamSiteDir.DefaultDisplayFormUrl + "?ID=" + item.Id.ToString()
+                                                listLarge.DefaultDisplayFormUrl + "?ID=" + item.Id.ToString()
                                                 );
                     }
                 }
